@@ -7,16 +7,20 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.io.IOException;
+import java.util.Optional;
 
 @CrossOrigin
 @RestController
+@RequestMapping("/auth")
 public class AuthenticationController {
     private final AuthenticationManager authenticationManager;
-    CustomerRepository customerRepository;
     private final TokenService tokenService;
-
+    private final CustomerRepository customerRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthenticationController(AuthenticationManager authenticationManager,
                                     TokenService tokenService,
@@ -24,53 +28,75 @@ public class AuthenticationController {
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
         this.customerRepository = customerRepository;
+        this.passwordEncoder = new BCryptPasswordEncoder();
     }
 
+    @PostMapping("/register")
+    public String register(@RequestBody User customer) {
+        if (customer.getName() == null || customer.getEmail() == null || customer.getPassword() == null) {
+            return "All fields are required";
+        }
 
-    @PostMapping("/signup")
-    public boolean register(@RequestBody User customer) {
+        String hashedPassword = passwordEncoder.encode(customer.getPassword());
+        customer.setPassword(hashedPassword);
+
         try {
             customerRepository.save(customer);
-            return true;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            return "User registered";
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error registering user: " + e.getMessage());
         }
     }
 
-    @PostMapping("/signin")
+    @PostMapping("/login")
     public String login(@RequestBody User customer) {
-        Authentication authentication = authenticationManager
-                .authenticate(
-                        new UsernamePasswordAuthenticationToken(
-                                customer.getUsername()
-                                ,customer.getPassword()));
-
-        return tokenService.generateToken(authentication);
-    }
-
-    @PostMapping("{id}")
-    public String changePassword(@RequestBody User customer) {
         try {
-            System.out.println("hello there");
-            customerRepository.updatePassword(customer);
-            return "Password changed successfully";
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            Authentication authentication = authenticationManager
+                    .authenticate(
+                            new UsernamePasswordAuthenticationToken(
+                                    customer.getEmail(),
+                                    customer.getPassword()));
+
+            return tokenService.generateToken(authentication);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Invalid email or password: " + e.getMessage());
         }
     }
 
-    @DeleteMapping("{id}")
-    public String deleteAccount(@RequestBody User customer) {
+    @GetMapping("/getUsername/{id}")
+    public String getUsername(@PathVariable("id") Long id) throws IOException {
+        Optional<User> user = customerRepository.findById(id);
+        if (user.isPresent()) {
+            return user.get().getName();
+        } else {
+            return "User not found";
+        }
+    }
+
+    @PostMapping("/changePassword/{id}")
+    public String changePassword(@PathVariable("id") Long id, @RequestBody User customer) {
         try {
-            System.out.println("hello there");
-            customerRepository.deleteAccount(customer);
+            Optional<User> existingUser = customerRepository.findById(id);
+            if (existingUser.isPresent()) {
+                User userToUpdate = existingUser.get();
+                userToUpdate.setPassword(passwordEncoder.encode(customer.getPassword()));
+                customerRepository.save(userToUpdate);
+                return "Password changed successfully";
+            } else {
+                return "User not found";
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error changing password: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/deleteAccount/{id}")
+    public String deleteAccount(@PathVariable("id") Long id) {
+        try {
+            customerRepository.deleteById(id);
             return "Account deleted successfully";
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error deleting account: " + e.getMessage());
         }
     }
 }
