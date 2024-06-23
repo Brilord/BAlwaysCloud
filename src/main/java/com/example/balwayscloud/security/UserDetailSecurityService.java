@@ -1,6 +1,6 @@
-package com.example.balwayscloud.service;
+package com.example.balwayscloud.security;
 
-import com.example.balwayscloud.model.User;
+import com.example.balwayscloud.model.Customer;
 import com.example.balwayscloud.repository.CustomerRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -19,7 +19,7 @@ public class UserDetailSecurityService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username)
             throws UsernameNotFoundException {
         try {
-            User customer =
+            Customer customer =
                     customerRepository.findByUsername(username);
             if (customer == null) {
                 throw new UsernameNotFoundException("");

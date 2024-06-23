@@ -1,1 +1,1 @@
-1,brian,$2a$10$Js8RHviCGh8qCliC7PMskOXD1KJpbo2cMvSa/.iuV2dgGpqZSh6US,brilord1000@gmail.com
+username,$2a$10$Bi2UYpJpeSdW9v.81tjhZ.yv.XQR6BfPY7d6LKIPTw89jxp7ccw9W,user@example.com

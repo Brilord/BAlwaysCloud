@@ -1,4 +1,4 @@
-package com.example.balwayscloud.service;
+package com.example.balwayscloud.security;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
